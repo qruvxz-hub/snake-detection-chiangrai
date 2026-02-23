@@ -3,52 +3,50 @@ import tensorflow as tf
 from PIL import Image, ImageOps
 import numpy as np
 
-# --- 1. ตั้งค่าหน้าเว็บให้สวยงาม ---
-st.set_page_config(page_title="ระบบคัดแยกชนิดงู เชียงราย", page_icon="🐍")
+# ตั้งค่าหน้าเว็บ
+st.set_page_config(page_title="ระบบคัดแยกชนิดงู จ.เชียงราย", layout="centered")
 
-# ส่วนแสดงชื่อผู้จัดทำ (น้องสามารถใส่รูป Banner จาก Canva ได้ที่นี่)
-st.title("🐍 ระบบคัดแยกชนิดของงูมีพิษและงูไม่มีพิษในจังหวัดเชียงราย")
-st.markdown("### ผู้จัดทำ: เด็กชายภัทชภณ จันทร์ใจ และ เด็กหญิงณกัญญา ชมภูรักษ์ ม.2/3")
+st.title("🐍 ระบบคัดแยกชนิดของงูในจังหวัดเชียงราย")
+st.write("จัดทำโดย: นายภัทชภณ และ เด็กหญิงณกัญญา")
+st.write("---")
 
-# --- 2. โหลดโมเดล AI ---
+# ฟังก์ชันโหลดโมเดล
 @st.cache_resource
 def load_my_model():
-    # ใช้ Legacy Keras สำหรับโมเดลจาก Teachable Machine
+    # แก้ไขจุดนี้เพื่อรองรับโมเดลจาก Teachable Machine รุ่นใหม่
     return tf.keras.models.load_model("keras_model.h5", compile=False, safe_mode=False)
+
 model = load_my_model()
-class_names = open("labels.txt", "r", encoding="utf-8").readlines()
 
-# --- 3. ส่วนรับภาพจากกล้องหรืออัปโหลด ---
-img_file_buffer = st.camera_input("ส่องไปที่ลายงูเพื่อตรวจสอบ")
-
-if img_file_buffer is not None:
-    # อ่านภาพ
-    image = Image.open(img_file_buffer)
-    st.image(image, caption="ภาพที่ถ่าย", use_column_width=True)
-
-    # เตรียมภาพสำหรับ AI
+# ฟังก์ชันทำนายผล
+def predict(image_data):
     size = (224, 224)
-    image = ImageOps.fit(image, size, Image.Resampling.LANCZOS)
+    image = ImageOps.fit(image_data, size, Image.Resampling.LANCZOS)
     image_array = np.asarray(image)
     normalized_image_array = (image_array.astype(np.float32) / 127.5) - 1
     data = np.ndarray(shape=(1, 224, 224, 3), dtype=np.float32)
     data[0] = normalized_image_array
-
-    # ทำนายผล
+    
     prediction = model.predict(data)
-    index = np.argmax(prediction)
-    class_name = class_names[index].strip()
-    confidence_score = prediction[0][index]
+    return prediction
 
-    # --- 4. แสดงผลลัพธ์แบบสวยงาม ---
-    st.subheader(f"ผลการวิเคราะห์: {class_name}")
-    st.progress(float(confidence_score))
-    st.write(f"ความแม่นยำ: {confidence_score:.2%}")
+# ส่วนอัปโหลดรูปภาพ
+uploaded_file = st.file_uploader("📸 กรุณาอัปโหลดรูปภาพของงู...", type=["jpg", "png", "jpeg"])
 
-    if "❤️" in class_name:
-        st.error("🚨 ระวัง! นี่คืองูพิษอันตราย")
-    elif "💚" in class_name:
-        st.success("✅ งูชนิดนี้ไม่มีพิษร้ายแรง")
-    else:
-        st.info("ℹ️ ไม่ใช่ภาพงู หรืออยู่นอกเหนือฐานข้อมูล")
+if uploaded_file is not None:
+    image = Image.open(uploaded_file)
+    st.image(image, caption='รูปภาพที่อัปโหลด', use_container_width=True)
+    st.write("กำลังประมวลผล...")
+    
+    results = predict(image)
+    
+    # อ่านชื่อ labels
+    with open("labels.txt", "r", encoding="utf-8") as f:
+        class_names = f.readlines()
+    
+    highest_index = np.argmax(results)
+    class_name = class_names[highest_index].strip()
+    confidence_score = results[0][highest_index]
 
+    st.subheader(f"🐍 ผลการทำนาย: {class_name}")
+    st.write(f"📊 ความเชื่อมั่น: {confidence_score * 100:.2f}%")

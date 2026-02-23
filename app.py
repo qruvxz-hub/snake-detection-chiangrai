@@ -7,7 +7,7 @@ import numpy as np
 st.set_page_config(page_title="ระบบคัดแยกชนิดงู จ.เชียงราย", layout="centered")
 
 st.title("🐍 ระบบคัดแยกชนิดของงูในจังหวัดเชียงราย")
-st.write("จัดทำโดย: นายภัทชภณ และ เด็กหญิงณกัญญา")
+st.write("จัดทำโดย: เด็กชายภัทชภณ และ เด็กหญิงณกัญญา")
 st.write("---")
 
 # ฟังก์ชันโหลดโมเดล
@@ -50,3 +50,4 @@ if uploaded_file is not None:
 
     st.subheader(f"🐍 ผลการทำนาย: {class_name}")
     st.write(f"📊 ความเชื่อมั่น: {confidence_score * 100:.2f}%")
+
